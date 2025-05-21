@@ -1,0 +1,5 @@
+/root/ModernDisign/build/CMakeFiles/reflect_example.dir
+/root/ModernDisign/build/CMakeFiles/run_test.dir
+/root/ModernDisign/build/CMakeFiles/test.dir
+/root/ModernDisign/build/CMakeFiles/edit_cache.dir
+/root/ModernDisign/build/CMakeFiles/rebuild_cache.dir
