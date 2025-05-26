@@ -29,7 +29,8 @@ namespace reaction
     template<typename Func,typename... Args>
     struct ExpressionTraits<React<ReactImpl<Func,Args...>>>
     {
-        using type = std::invoke_result_t<Func, typename ExpressionTraits<Args>::type...>;
+        using rawType = std::invoke_result_t<Func, typename ExpressionTraits<Args>::type...>;
+        using type = std::conditional_t<IsVoidType<rawType>, VoidWrapper, rawType>;
     };
 
     template<typename Func,typename... Args>
@@ -42,43 +43,60 @@ namespace reaction
         using exprType = calcExpr;
         using valueType=ReturnType<Func,Args...>;
 
-        template<typename F,typename... A>
-        Expression(F&& func,A&&... args)
-            : Resource<ReturnType<Func,Args...>>(), m_func(std::forward<F>(func)), m_args(std::forward<A>(args)...)
+        template<typename F, typename... A>
+        void setSource(F && func,A&&... args)
         {
-            this->updateObserver(std::forward<A>(args)...);
-            evaluate();
+            if constexpr(std::convertible_to<ReturnType<std::decay_t<F>,std::decay_t<A>...>, valueType>)
+            {
+                this->updateObserver(std::forward<A>(args)...);
+                setFunctor(createFunc(std::forward<F>(func), std::forward<A>(args)...));
+                evaluate();
+            }
+
         }
 
     private:
+        template<typename F, typename... A>
+        auto createFunc(F && func, A&&... args) 
+        {
+            return [func=std::forward<F>(func), ...args=args.getPtr()]() {
+                if constexpr(IsVoidType<valueType>)
+                {   
+                    std::invoke(func, args->get()...);
+                    return VoidWrapper{};
+                }
+                else
+                {
+                    return std::invoke(func, args->get()...);
+                }
+            };
+        }
+
+
         void valueChange() override{
             evaluate();
+            this->notify();
         }
 
         void evaluate()
         {
             if constexpr(IsVoidType<valueType>)
             {
-                [&]<std::size_t... I>(std::index_sequence<I...>)
-                {
-                    std::invoke(m_func, std::get<I>(m_args).get().get()...);
-                    return;
-                }(std::make_index_sequence<std::tuple_size_v<decltype(m_args)>>{});
+                std::invoke(m_func);
                 
             }
             else{
-                auto result = [&]<std::size_t... I>(std::index_sequence<I...>)
-                {
-                    return std::invoke(m_func, std::get<I>(m_args).get().get()...);
-                }(std::make_index_sequence<std::tuple_size_v<decltype(m_args)>>{});
-            
-                this->updateValue(result);
+                this->updateValue(std::invoke(m_func));
             }
 
         }
 
-        Func m_func;
-        std::tuple<std::reference_wrapper<Args>...> m_args;
+        void setFunctor(const std::function<valueType()>& func)
+        {
+            m_func = func;
+        }
+
+        std::function<valueType()> m_func;
     };
 
     template<typename Type>

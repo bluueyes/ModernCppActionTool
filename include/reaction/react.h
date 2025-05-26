@@ -16,6 +16,17 @@ namespace reaction
             value(std::forward<U>(other));
         }
 
+        auto getRaw() const
+        {
+            return this->getRawPtr();
+        }
+
+        template<typename F,typename ...A>
+        void set(F&& func, A&&... args)
+        {
+            this->setSource(std::forward<F>(func), std::forward<A>(args)...);       
+        }
+
         decltype(auto) get() const{
             return this->getValue();    
         }
@@ -108,17 +119,11 @@ namespace reaction
             return *this;
         }
 
-        ReactType* operator->() const
+        auto operator->() const
         {
-            if(auto ptr=m_weakPtr.lock())
-            {
-                return ptr.get();
-            }
-            else
-            {
-                throw std::runtime_error("Weak pointer expired");
-            }
+            return getPtr()->getRaw();
         }
+        
         ReactType& operator*() const
         {
             if(auto ptr=m_weakPtr.lock())
@@ -137,9 +142,13 @@ namespace reaction
         }
 
         decltype(auto) get() const
-            requires(IsDataReact<ReactType>)
         {
             return getPtr()->get();
+        }
+
+        template<typename F,typename ...A>
+        void reset(F&& f, A&&... args){
+            getPtr()->set(std::forward<F>(f), std::forward<A>(args)...);
         }
 
         template<typename T>
@@ -190,16 +199,18 @@ namespace reaction
     template<typename Func,typename... Args>
     auto calc(Func&& t, Args&&... args)
     {
-        auto ptr=std::make_shared<ReactImpl<std::decay_t<Func>,std::decay_t<Args>...>>(std::forward<Func>(t), std::forward<Args>(args)...);
+        auto ptr=std::make_shared<ReactImpl<std::decay_t<Func>,std::decay_t<Args>...>>();
         ObserverGraph::getInstance().addNode(ptr);
+        ptr->set(std::forward<Func>(t), std::forward<Args>(args)...);
         return React(ptr);
     }
 
     template<typename Func,typename... Args>
     auto action(Func&& t, Args&&... args)
     {
-        auto ptr=std::make_shared<ReactImpl<std::decay_t<Func>,std::decay_t<Args>...>>(std::forward<Func>(t), std::forward<Args>(args)...);
+        auto ptr=std::make_shared<ReactImpl<std::decay_t<Func>,std::decay_t<Args>...>>();
         ObserverGraph::getInstance().addNode(ptr);
+        ptr->set(std::forward<Func>(t), std::forward<Args>(args)...);
         return React(ptr);
     }
 

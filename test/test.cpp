@@ -196,8 +196,43 @@ TEST(BasicTest, FieldTest) {
     auto ds = reaction::calc([](int aa, auto pp) { return std::to_string(aa) + pp.getName(); }, a, p);
 
     EXPECT_EQ(ds.get(), "1lummy");
-    p.get().setName("lummy-new");
+    p->setName("lummy-new");
     EXPECT_EQ(ds.get(), "1lummy-new");
+}
+
+TEST(ReactionTest, TestAction)
+{
+    auto a = reaction::var(1);
+    auto b = reaction::var(3.14);
+    auto at = reaction::action([](int aa, double bb)
+                               { std::cout << "a = " << aa << '\t' << "b = " << bb << '\t'; }, a, b);
+
+    bool trigger = false;
+    auto att = reaction::action([&]([[maybe_unused]] auto atat)
+                                { trigger = true; std::cout << "at trigger " << std::endl; }, at);
+
+    trigger = false;
+
+    a.value(2);
+    EXPECT_TRUE(trigger);
+}
+
+
+
+TEST(ReactionTest, TestReset)
+{
+    auto a = reaction::var(1);
+    auto b = reaction::var(2);
+
+    auto ds = reaction::calc([](auto aa, auto bb) { return aa + bb; }, a, b);
+
+    auto dds = reaction::calc([](auto aa, auto bb) { return aa + bb; }, a, b);
+
+    dds.reset([](auto aa, auto dsds) { return aa + dsds; }, a, ds);
+    a.value(2);
+    b.value(3);
+
+    EXPECT_EQ(dds.get(), 7);
 }
 
 

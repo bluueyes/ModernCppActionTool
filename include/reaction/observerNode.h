@@ -2,6 +2,7 @@
 #include "concept.h"
 #include <atomic>
 #include "reaction/utility.h"
+#include <functional>
 
 namespace reaction{
 
@@ -37,7 +38,7 @@ namespace reaction{
 
     };
 
-    class  ObserverGraph{
+    class ObserverGraph{
     public:
         static ObserverGraph& getInstance(){
             static ObserverGraph instance;

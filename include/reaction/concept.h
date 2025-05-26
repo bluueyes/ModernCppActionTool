@@ -1,6 +1,7 @@
 #include <concepts>
 
 namespace reaction{
+    struct VoidWrapper;
     template<typename T , typename U>
     concept Convertable = std::is_convertible_v<std::decay_t<T>,std::decay_t<U>>;
 
@@ -12,7 +13,7 @@ namespace reaction{
     concept IsConstVar=std::is_const_v<std::remove_reference_t<T>> ;
 
     template<typename T>
-    concept IsVoidType = std::is_void_v<T>;
+    concept IsVoidType = std::is_void_v<T> || std::is_same_v<T,VoidWrapper>;
 
     class FieldBase;
     template<typename T>

@@ -32,8 +32,18 @@ namespace reaction
     void updateValue(T&& t) {
         if(!m_res){
             m_res=std::make_unique<Type>(std::forward<T>(t));
+        }else{
+            *m_res=std::forward<T>(t);
         }
-        *m_res=std::forward<T>(t);
+    }
+
+    Type* getRawPtr() const
+    {
+        if(!m_res)
+        {
+            throw std::runtime_error("Resource is not initialized");
+        }
+        return m_res.get();
     }
 
 
@@ -41,9 +51,15 @@ namespace reaction
         std::unique_ptr<Type> m_res;
     };
 
-    template<>
-    class Resource<void> : public ObserverNode
-    {
+    struct VoidWrapper {};
 
+    template<>
+    class Resource<VoidWrapper> : public ObserverNode
+    {
+    public:
+        VoidWrapper getValue() const
+        {
+            return VoidWrapper{};
+        }
     };
 }
